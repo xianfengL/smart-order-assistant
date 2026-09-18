@@ -1,0 +1,48 @@
+services:
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://orderly:${POSTGRES_PASSWORD:-orderly-demo}@postgres:5432/orderly
+      DATA_DIR: /app/data
+      DEMO_MODE: ${DEMO_MODE:-true}
+      JWT_SECRET: ${JWT_SECRET:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      CUSTOMER_PASSWORD: ${CUSTOMER_PASSWORD:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      LLM_MODEL: ${LLM_MODEL:-}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-3-small}
+      CHART_TRANSPORT: ${CHART_TRANSPORT:-stdio}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080}
+    volumes: ["assistant-data:/app/data"]
+    depends_on:
+      postgres: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    restart: unless-stopped
+  frontend:
+    build: ./frontend
+    ports: ["8080:80"]
+    depends_on:
+      backend: { condition: service_healthy }
+    restart: unless-stopped
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: orderly
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-orderly-demo}
+      POSTGRES_DB: orderly
+    volumes: ["postgres-data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U orderly -d orderly"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+volumes:
+  assistant-data:
+  postgres-data:

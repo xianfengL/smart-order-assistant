@@ -1,0 +1,13 @@
+.venv/
+node_modules/
+frontend/dist/
+__pycache__/
+.pytest_cache/
+.env
+data/
+*.pyc
+*.egg-info/
+
+*.log
+credential_probe.py
+playwright-report/
